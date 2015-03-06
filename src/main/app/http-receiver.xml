@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:jersey="http://www.mulesoft.org/schema/mule/jersey" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" version="CE-3.4.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/jersey http://www.mulesoft.org/schema/mule/jersey/current/mule-jersey.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/current/mule-amqp.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+    <jms:activemq-connector doc:name="Active MQ" name="Active_MQ" validateConnections="true" brokerURL="tcp://localhost:61616" numberOfConsumers="20"/>
+    <flow name="http-receiver-main">
+        <http:inbound-endpoint exchange-pattern="request-response" host="localhost" port="8081" path="message" mimeType="application/json" doc:name="HTTP"/>
+        <choice doc:name="Choice">
+            <when expression="#[message.inboundProperties['http.method'] == 'POST']">
+                <logger level="INFO" doc:name="POST Logger"/>
+                <jms:outbound-endpoint queue="muleMessage" doc:name="JMS" connector-ref="Active_MQ" exchange-pattern="request-response"/>
+            </when>
+            <otherwise>
+                <set-payload doc:name="Set GET response" value="#['{&quot;Message&quot;:{&quot;Method&quot;:&quot;' + message.inboundProperties['http.method'] + '&quot;,&quot;Payload&quot;:&quot;' + payload + '&quot;,&quot;Path&quot;:&quot;' + message.inboundProperties['http.request.path'] + '&quot;,&quot;QueryParams&quot;:&quot;' + message.inboundProperties['http.query.params'] + '&quot;}}']"/>
+            </otherwise>
+        </choice>
+    </flow>
+</mule>
